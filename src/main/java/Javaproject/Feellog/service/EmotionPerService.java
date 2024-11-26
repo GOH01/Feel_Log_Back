@@ -146,7 +146,7 @@ public class EmotionPerService {
 
     private void saveEmotionPer(Diary diary, List<String> labels, Map<String, Double> swappedScroes){
         for(String label : labels){
-            Emotion emotion = emotionRepository.findByType(label);
+            Emotion emotion = emotionRepository.findByEmotionType(label);
             if(emotion==null) throw new IllegalArgumentException("Emotion 타입이 존재하지 않습니다.");
 
             EmotionPer emotionPer = new EmotionPer();
