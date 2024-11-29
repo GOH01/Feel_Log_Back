@@ -91,7 +91,7 @@ public class UserController {
                     @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음"),
                     @ApiResponse(responseCode = "401", description = "유효하지 않은 토큰")})
     @DeleteMapping("/user/delete")
-    public ResponseEntity<Void> deleteUser(@RequestHeader("Athorization") String token){
+    public ResponseEntity<Void> deleteUser(@RequestHeader("Authorization") String token){
         try{
             String userToken = jwtUtility.bearerToken(token);
             userService.deleteUser(userToken);

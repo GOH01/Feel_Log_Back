@@ -23,13 +23,17 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.util.*;
 
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional
 public class EmotionPerService {
 
     private final EmotionPerRepository emotionPerRepository;
@@ -42,30 +46,46 @@ public class EmotionPerService {
     private String API_KEY;
 
     public void analyzeAndSaveEmotionForDate(LocalDate date){
-        //1. 특정 날짜의 일기조회
+        // 1. 특정 날짜의 일기 조회
         Diary diary = diaryRepository.findByDate(date);
-        if(diary==null) throw new IllegalArgumentException("해당 날짜의 일기를 찾을 수 없습니다.");
+        if (diary == null) throw new IllegalArgumentException("해당 날짜의 일기를 찾을 수 없습니다.");
 
-        //2. 감정 분석 API 호출
+        // 2. 감정 분석 API 호출
         JsonObject response = callEmotionAnalysisAPI(diary.getContent());
 
-        JsonArray labelsArray = response.getAsJsonArray("labels");
-        JsonArray scoresArray = response.getAsJsonArray("scores");
+        // 응답에서 'scored_labels' 배열 가져오기
+        if (!response.has("scored_labels")) {
+            throw new IllegalArgumentException("API 응답이 잘못되었습니다: 'scored_labels' 필드가 없습니다.");
+        }
 
+        JsonArray scoredLabelsArray = response.getAsJsonArray("scored_labels");
 
-        List<String> labels = convertToStringList(labelsArray);
-        List<Double> scores = convertToDoubleList(scoresArray);
+        // 3. 'scored_labels' 배열에서 label과 score 추출
+        List<String> labels = new ArrayList<>();
+        List<Double> scores = new ArrayList<>();
+
+        for (int i = 0; i < scoredLabelsArray.size(); i++) {
+            JsonObject labelScore = scoredLabelsArray.get(i).getAsJsonObject();
+            labels.add(labelScore.get("label").getAsString());
+            scores.add(labelScore.get("score").getAsDouble());
+        }
 
         // 4. 감정 비율 정규화
         List<Double> normalizedScores = normalizeScores(scores);
 
-        Map<String, Double> swappedScores = swapJoyAndAnger(labels, scores);
+        // 5. joy와 anger의 score 스왑
+        Map<String, Double> swappedScores = swapJoyAndAnger(labels, normalizedScores);
 
-        saveEmotionPer(diary, labels, swappedScores);
+        // 6. 결과 저장
+        saveEmotionPer(diary, swappedScores);
     }
 
     // JsonArray -> List<String> 변환 메서드
     private List<String> convertToStringList(JsonArray jsonArray) {
+        if (jsonArray == null) {
+            throw new IllegalArgumentException("JSON Array is null");
+        }
+
         List<String> list = new ArrayList<>();
         jsonArray.forEach(element -> list.add(element.getAsString())); // 각 요소를 String으로 변환
         return list;
@@ -73,6 +93,9 @@ public class EmotionPerService {
 
     // JsonArray -> List<Double> 변환 메서드
     private List<Double> convertToDoubleList(JsonArray jsonArray) {
+        if (jsonArray == null) {
+            throw new IllegalArgumentException("JSON Array is null");
+        }
         List<Double> list = new ArrayList<>();
         jsonArray.forEach(element -> list.add(element.getAsDouble())); // 각 요소를 Double로 변환
         return list;
@@ -80,6 +103,9 @@ public class EmotionPerService {
 
     private List<Double> normalizeScores(List<Double> scores) {
         double total = scores.stream().mapToDouble(Double::doubleValue).sum(); // 총합 계산
+        if (total == 0) {
+            throw new IllegalArgumentException("Scores의 총합이 0입니다. 정규화할 수 없습니다.");
+        }
         List<Double> normalized = new ArrayList<>();
 
         for (double score : scores) {
@@ -91,34 +117,42 @@ public class EmotionPerService {
     }
 
     private JsonObject callEmotionAnalysisAPI(String diaryContent){
-        try(CloseableHttpClient httpClient = HttpClients.createDefault()){
-            HttpPost post = new HttpPost(API_URL);
-            post.setHeader("Authorization",API_KEY);
-            post.setHeader("Content-Type","application/json");
+        try {
+            // HttpClient 생성
+            HttpClient client = HttpClient.newHttpClient();
 
+            // 요청 본문 생성
             JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("text",diaryContent);
+            requestBody.addProperty("text", diaryContent);
 
-            post.setEntity(new StringEntity(requestBody.toString()));
+            // HttpRequest 생성
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_URL))
+                    .header("Authorization", API_KEY)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody.toString()))
+                    .build();
 
-            try(CloseableHttpResponse response =httpClient.execute(post)){
-                int statusCode = response.getCode();
+            // 요청 보내기
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-                if(statusCode == 200){
-                    return JsonParser.parseReader(
-                            new InputStreamReader(response.getEntity().getContent())
-                    ).getAsJsonObject();
-                }else{
-                    throw new RuntimeException("API 호출 실패: "+response.getReasonPhrase());
-                }
+            if (response.statusCode() == 200) {
+                // 응답 처리
+                JsonObject responseBody = JsonParser.parseString(response.body()).getAsJsonObject();
+                System.out.println("API Response: " + responseBody); // 디버깅
+                return responseBody;
+            } else {
+                throw new RuntimeException("API 호출 실패: " + response.statusCode() + ", " + response.body());
             }
-        }catch(Exception e){
-            throw new RuntimeException("감정 분석 API 호출 중 오류 발생",e);
+        } catch (Exception e) {
+            throw new RuntimeException("감정 분석 API 호출 중 오류 발생", e);
         }
     }
 
     private Map<String, Double> swapJoyAndAnger(List<String> labels, List<Double> scores) {
         double joyValue = 0.0, angerValue = 0.0;
+        Map<String, Double> swappedScores = new HashMap<>();
+
         for (int i = 0; i < labels.size(); i++) {
             if("joy".equalsIgnoreCase(labels.get(i))){
                 joyValue = scores.get(i);
@@ -127,7 +161,6 @@ public class EmotionPerService {
             }
         }
 
-        Map<String, Double> swappedScores = new HashMap<>();
         for (int i = 0; i < labels.size(); i++) {
             String label = labels.get(i);
             double value = scores.get(i);
@@ -144,18 +177,34 @@ public class EmotionPerService {
         return swappedScores;
     }
 
-    private void saveEmotionPer(Diary diary, List<String> labels, Map<String, Double> swappedScroes){
-        for(String label : labels){
-            Emotion emotion = emotionRepository.findByEmotionType(label);
-            if(emotion==null) throw new IllegalArgumentException("Emotion 타입이 존재하지 않습니다.");
+    private void saveEmotionPer(Diary diary,Map<String, Double> swappedScores) {
 
+        for (Map.Entry<String, Double> entry : swappedScores.entrySet()) {
+            String label = entry.getKey();
+            double value = entry.getValue();
+
+            // Emotion 찾기
+            System.out.println("Looking for emotion: " + label);
+            Emotion emotion = emotionRepository.findByEmotionType(label);
+            if (emotion == null) {
+                throw new IllegalArgumentException("Emotion 타입이 존재하지 않습니다: " + label);
+            }
+            System.out.println("Found emotion: " + emotion.getEmotionType());
+
+            // EmotionPer 생성 및 저장
             EmotionPer emotionPer = new EmotionPer();
             emotionPer.setDiary(diary);
             emotionPer.setEmotion(emotion);
-            emotionPer.setPer(swappedScroes.get(label));
+            emotionPer.setPer(value);
+
+            System.out.println("Saving EmotionPer: diaryId=" + diary.getId() +
+                    ", emotionType=" + emotion.getEmotionType() +
+                    ", per=" + value);
 
             emotionPerRepository.save(emotionPer);
+            emotionPerRepository.flush();
         }
+        System.out.println("All EmotionPer saved successfully for diaryId=" + diary.getId());
     }
 
     private  double roundToTwoDecimalPlaces(double value){
