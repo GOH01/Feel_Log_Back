@@ -62,8 +62,13 @@ public class DiaryService {
 
     // 특정 유저의 특정 날짜 일기 조회
     public List<Diary> getDiariesByUserAndDate(String userId, String date) {
+        // userId를 사용해 User 엔티티 조회
         User user = userRepository.findByUserId(userId);
+
+        // 문자열로 받은 날짜를 LocalDate로 변환
         LocalDate parsedDate = LocalDate.parse(date);
+
+        // 해당 유저와 날짜에 해당하는 일기 검색
         return diaryRepository.findByUserIdAndDate(user.getId(), parsedDate);
     }
     //유저 ID로 해당 유저의 모든 일기를 조회

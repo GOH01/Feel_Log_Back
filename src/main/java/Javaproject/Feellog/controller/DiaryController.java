@@ -1,6 +1,7 @@
 package Javaproject.Feellog.controller;
 
 import Javaproject.Feellog.DTO.DiaryContentRequest;
+import Javaproject.Feellog.DTO.DiarySummaryResponse;
 import Javaproject.Feellog.domain.Diary;
 import Javaproject.Feellog.service.DiaryService;
 import Javaproject.Feellog.service.UserService;
@@ -20,7 +21,7 @@ public class DiaryController {
 
     // 일기 저장
     @PostMapping("/save")
-    public ResponseEntity<Diary> saveDiary(
+    public ResponseEntity<DiarySummaryResponse> saveDiary(
             @RequestHeader("Authorization") String token,
             @RequestBody DiaryContentRequest request
     ) {
@@ -29,12 +30,15 @@ public class DiaryController {
 
         String userId = userService.tokenToUser(tokenWithoutBearer).getUserId(); // 토큰에서 userId 추출
         Diary savedDiary = diaryService.saveDiary(userId, request.getContent());
-        return ResponseEntity.ok(savedDiary);
+
+        // 저장된 Diary를 DiarySummaryResponse로 변환하여 반환
+        DiarySummaryResponse response = new DiarySummaryResponse(savedDiary);
+        return ResponseEntity.ok(response);
     }
 
     // 일기 수정
     @PutMapping("/update/{id}")
-    public ResponseEntity<Diary> updateDiary(
+    public ResponseEntity<DiarySummaryResponse> updateDiary(
             @RequestHeader("Authorization") String token,
             @PathVariable Long id,
             @RequestBody DiaryContentRequest request
@@ -43,7 +47,10 @@ public class DiaryController {
         String tokenWithoutBearer = token.replace("Bearer ", "").trim();
         String userId = userService.tokenToUser(tokenWithoutBearer).getUserId(); // 토큰 검증
         Diary updatedDiary = diaryService.updateDiary(userId, id, request.getContent());
-        return ResponseEntity.ok(updatedDiary);
+
+        // 수정된 Diary를 DiarySummaryResponse로 변환하여 반환
+        DiarySummaryResponse response = new DiarySummaryResponse(updatedDiary);
+        return ResponseEntity.ok(response);
     }
 
     // 일기 삭제
@@ -61,15 +68,22 @@ public class DiaryController {
 
     // 특정 날짜의 일기 조회
     @GetMapping("/user/date")
-    public ResponseEntity<List<Diary>> getDiariesByDate(
+    public ResponseEntity<List<DiarySummaryResponse>> getDiariesByDate(
             @RequestHeader("Authorization") String token,
             @RequestParam String date
     ) {
         // "Bearer " 제거
         String tokenWithoutBearer = token.replace("Bearer ", "").trim();
         String userId = userService.tokenToUser(tokenWithoutBearer).getUserId(); // 토큰 검증
+
+        // 특정 날짜와 userId로 일기 검색
         List<Diary> diaries = diaryService.getDiariesByUserAndDate(userId, date);
-        return ResponseEntity.ok(diaries);
+
+        // 응답 객체로 변환
+        List<DiarySummaryResponse> response = diaries.stream()
+                .map(DiarySummaryResponse::new)
+                .toList();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/user/{userId}")
