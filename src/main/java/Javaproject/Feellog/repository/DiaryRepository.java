@@ -9,7 +9,11 @@ import java.util.List;
 
 @Repository
 public interface DiaryRepository extends JpaRepository<Diary, Long> {
+
     Diary findByDate(LocalDate date);
+
     List<Diary> findByUserId(Long userId);
+
     List<Diary> findByUserIdAndDate(Long userId, LocalDate date);
+
 }
