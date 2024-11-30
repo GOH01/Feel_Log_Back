@@ -212,4 +212,31 @@ public class EmotionPerService {
                 .setScale(2, RoundingMode.HALF_UP)
                 .doubleValue();
     }
+
+    public Map<String, Double> getMonthlyEmotionStatistics(int year, int month) {
+        // 1. 해당 월의 데이터 조회
+        List<EmotionPer> emotionPerList = emotionPerRepository.findByMonthAndYear(month, year);
+
+        if (emotionPerList.isEmpty()) {
+            throw new IllegalArgumentException("해당 월의 데이터가 존재하지 않습니다.");
+        }
+
+        // 2. 감정별 비율 합계 및 데이터 수 계산
+        Map<String, List<Double>> emotionValues = new HashMap<>();
+        for (EmotionPer emotionPer : emotionPerList) {
+            String emotionType = emotionPer.getEmotion().getEmotionType();
+            emotionValues.computeIfAbsent(emotionType, k -> new ArrayList<>()).add(emotionPer.getPer());
+        }
+
+        // 3. 평균 계산
+        Map<String, Double> averages = new HashMap<>();
+        for (Map.Entry<String, List<Double>> entry : emotionValues.entrySet()) {
+            String emotionType = entry.getKey();
+            List<Double> values = entry.getValue();
+            double average = values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+            averages.put(emotionType, roundToTwoDecimalPlaces(average));
+        }
+
+        return averages;
+    }
 }
