@@ -86,8 +86,11 @@ public class DiaryController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Diary>> getUserDiaries(@PathVariable String userId) {
-        return ResponseEntity.ok(diaryService.getUserDiaries(userId));
+    @GetMapping("/user/{userId}/count")
+    public ResponseEntity<Long> getUserDiariesCount(@PathVariable String userId) {
+
+        // 특정 유저의 일기 개수를 가져오는 서비스 호출
+        long diaryCount = diaryService.getUserDiaryCount(userId);
+        return ResponseEntity.ok(diaryCount);
     }
 }

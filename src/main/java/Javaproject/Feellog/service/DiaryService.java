@@ -71,14 +71,12 @@ public class DiaryService {
         // 해당 유저와 날짜에 해당하는 일기 검색
         return diaryRepository.findByUserIdAndDate(user.getId(), parsedDate);
     }
-    //유저 ID로 해당 유저의 모든 일기를 조회
-    public List<Diary> getUserDiaries(String userId) {
-        // UserRepository를 이용해 userId(String)를 기반으로 User 엔티티 조회
+    public long getUserDiaryCount(String userId) {
+        // User를 조회한 뒤, DiaryRepository에서 일기 개수 가져오기
         User user = userRepository.findByUserId(userId);
         if (user == null) {
             throw new RuntimeException("User not found");
         }
-        // User의 Long 타입 id를 DiaryRepository로 전달
-        return diaryRepository.findByUserId(user.getId());
+        return diaryRepository.countByUserId(user.getId());
     }
 }
