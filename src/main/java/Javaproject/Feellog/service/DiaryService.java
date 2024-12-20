@@ -77,6 +77,6 @@ public class DiaryService {
         if (user == null) {
             throw new RuntimeException("User not found");
         }
-        return diaryRepository.countByUserId(user.getId());
+        return diaryRepository.countByUserUserId(user.getUserId());
     }
 }

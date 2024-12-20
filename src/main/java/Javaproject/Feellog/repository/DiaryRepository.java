@@ -2,6 +2,8 @@ package Javaproject.Feellog.repository;
 
 import Javaproject.Feellog.domain.Diary;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -16,5 +18,8 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
 
     List<Diary> findByUserIdAndDate(Long userId, LocalDate date);
 
-    long countByUserId(Long userId);
+    long countByUser_UserId(String userId);
+    // 또는
+    @Query("SELECT COUNT(d) FROM Diary d WHERE d.user.userId = :userId")
+    long countByUserUserId(@Param("userId") String userId);
 }
