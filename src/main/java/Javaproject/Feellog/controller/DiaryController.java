@@ -93,4 +93,6 @@ public class DiaryController {
         long diaryCount = diaryService.getUserDiaryCount(userId);
         return ResponseEntity.ok(diaryCount);
     }
+
+
 }

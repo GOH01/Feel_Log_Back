@@ -6,10 +6,12 @@ spring:
         driver-class-name: com.mysql.cj.jdbc.Driver
     jpa:
         hibernate:
-            ddl-auto: create
+            ddl-auto: update
         properties:
             hibernate:
                 show_sql: true
                 format_sql: true
-
+api:
+    url: https://api.nlpcloud.io/v1/distilbert-base-uncased-emotion/sentiment
+    key: Token 3599edadcb19f8c69cf7d921b428a73d96504566
 
