@@ -6,10 +6,14 @@ import Javaproject.Feellog.domain.Diary;
 import Javaproject.Feellog.service.DiaryService;
 import Javaproject.Feellog.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/diaries")
@@ -36,35 +40,66 @@ public class DiaryController {
         return ResponseEntity.ok(response);
     }
 
-    // 일기 수정
-    @PutMapping("/update/{id}")
-    public ResponseEntity<DiarySummaryResponse> updateDiary(
+    // 특정 날짜의 일기 수정
+    @PutMapping("/update")
+    public ResponseEntity<Map<String, String>> updateDiaryByDate(
             @RequestHeader("Authorization") String token,
-            @PathVariable Long id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestBody DiaryContentRequest request
     ) {
-        // "Bearer " 제거
-        String tokenWithoutBearer = token.replace("Bearer ", "").trim();
-        String userId = userService.tokenToUser(tokenWithoutBearer).getUserId(); // 토큰 검증
-        Diary updatedDiary = diaryService.updateDiary(userId, id, request.getContent());
+        // 서비스에서 Diary 수정
+        Diary updatedDiary = diaryService.updateDiary(request.getContent(), token, date);
 
-        // 수정된 Diary를 DiarySummaryResponse로 변환하여 반환
-        DiarySummaryResponse response = new DiarySummaryResponse(updatedDiary);
+        // 반환할 데이터를 Map으로 구성
+        Map<String, String> response = new HashMap<>();
+        response.put("updatedContent", updatedDiary.getContent());
+        response.put("updateAt", updatedDiary.getUpdateAt().toString());
+
         return ResponseEntity.ok(response);
     }
 
-    // 일기 삭제
-    @DeleteMapping("/delete/{id}")
-    public ResponseEntity<String> deleteDiary(
+
+
+
+    // 특정 날짜의 일기 삭제
+    @DeleteMapping("/delete")
+    public ResponseEntity<String> deleteDiaryByDate(
             @RequestHeader("Authorization") String token,
-            @PathVariable Long id
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        // "Bearer " 제거
-        String tokenWithoutBearer = token.replace("Bearer ", "").trim();
-        String userId = userService.tokenToUser(tokenWithoutBearer).getUserId(); // 토큰 검증
-        diaryService.deleteDiary(userId, id);
-        return ResponseEntity.ok("Diary deleted successfully.");
+        diaryService.deleteDiary(token, date);
+        return ResponseEntity.ok("일기가 성공적으로 삭제되었습니다.");
     }
+
+    // 일기 수정
+//    @PutMapping("/update/{id}")
+//    public ResponseEntity<DiarySummaryResponse> updateDiary(
+//            @RequestHeader("Authorization") String token,
+//            @PathVariable Long id,
+//            @RequestBody DiaryContentRequest request
+//    ) {
+//        // "Bearer " 제거
+//        String tokenWithoutBearer = token.replace("Bearer ", "").trim();
+//        String userId = userService.tokenToUser(tokenWithoutBearer).getUserId(); // 토큰 검증
+//        Diary updatedDiary = diaryService.updateDiary(userId, id, request.getContent());
+//
+//        // 수정된 Diary를 DiarySummaryResponse로 변환하여 반환
+//        DiarySummaryResponse response = new DiarySummaryResponse(updatedDiary);
+//        return ResponseEntity.ok(response);
+//    }
+//
+//    // 일기 삭제
+//    @DeleteMapping("/delete/{id}")
+//    public ResponseEntity<String> deleteDiary(
+//            @RequestHeader("Authorization") String token,
+//            @PathVariable Long id
+//    ) {
+//        // "Bearer " 제거
+//        String tokenWithoutBearer = token.replace("Bearer ", "").trim();
+//        String userId = userService.tokenToUser(tokenWithoutBearer).getUserId(); // 토큰 검증
+//        diaryService.deleteDiary(userId, id);
+//        return ResponseEntity.ok("Diary deleted successfully.");
+//    }
 
     // 특정 날짜의 일기 조회
     @GetMapping("/user/date")
@@ -95,4 +130,10 @@ public class DiaryController {
     }
 
 
+    //가장 최근 작성
+    @GetMapping("/latest")
+    public ResponseEntity<LocalDate> getLatestDiaryDate(@RequestHeader("Authorization") String token) {
+        LocalDate latestDate = diaryService.getLatestDiaryDate(token);
+        return ResponseEntity.ok(latestDate);
+    }
 }
