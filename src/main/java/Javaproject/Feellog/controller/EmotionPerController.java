@@ -1,22 +1,30 @@
 package Javaproject.Feellog.controller;
 
+import Javaproject.Feellog.DTO.EmotionperDTO.*;
+import Javaproject.Feellog.domain.Diary;
+import Javaproject.Feellog.domain.EmotionPer;
+import Javaproject.Feellog.service.DiaryService;
 import Javaproject.Feellog.service.EmotionPerService;
+import Javaproject.Feellog.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
 public class EmotionPerController {
 
     private final EmotionPerService emotionPerService;
+    private final UserService userService;
+    private final DiaryService diaryService;
 
     @PostMapping("/api/emotion/analyze")
     public String analyzeEmotionForDiary(@RequestParam String date){
@@ -32,5 +40,43 @@ public class EmotionPerController {
         response.put("month", year + "-" + (month < 10 ? "0" + month : month));
         response.put("statistics", statistics);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/emotionper")
+    public ResponseEntity<List<EmotionPerResponse>> getEmotionsByDate(
+            @RequestHeader("Authorization") String token,
+            @RequestParam String date) {
+
+        try {
+            String userId = userService.tokenToUser(token).getUserId();
+            List<Diary> diaries = diaryService.getDiariesByUserAndDate(userId, date);
+
+            if (diaries.isEmpty()) {
+                return ResponseEntity.noContent().build();
+            }
+
+            List<EmotionPer> emotions = emotionPerService.getEmotionPer(diaries.get(0));
+
+            if (emotions.isEmpty()) {
+                return ResponseEntity.ok(Collections.emptyList()); // 감정 데이터가 없을 경우 빈 리스트 반환
+            }
+
+            // EmotionPer를 EmotionPerResponse로 변환
+            List<EmotionPerResponse> response = emotions.stream()
+                    .map(emotion -> {
+                        EmotionPerResponse emotionResponse = new EmotionPerResponse();
+                        emotionResponse.setEmotionId(emotion.getEmotion().getId());
+                        emotionResponse.setPer(emotion.getPer());
+                        return emotionResponse;
+                    })
+                    .collect(Collectors.toList());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            // 예외 발생 시 로그 출력 및 JSON 형식으로 오류 메시지 반환
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Collections.singletonList(new EmotionPerResponse())); // 오류 발생 시 기본값 반환
+        }
     }
 }

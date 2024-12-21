@@ -12,5 +12,5 @@ import java.util.List;
 public interface EmotionPerRepository extends JpaRepository<EmotionPer, Long> {
     @Query("SELECT e FROM EmotionPer e WHERE MONTH(e.diary.date) = :month AND YEAR(e.diary.date) = :year")
     List<EmotionPer> findByMonthAndYear(@Param("month") int month, @Param("year") int year);
-    List<EmotionPer> findByDiary_Id(Long diaryId);
+    List<EmotionPer> findByDiaryId(Long diaryId);
 }

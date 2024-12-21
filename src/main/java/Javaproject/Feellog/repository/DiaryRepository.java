@@ -22,4 +22,7 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
     // 또는
     @Query("SELECT COUNT(d) FROM Diary d WHERE d.user.userId = :userId")
     long countByUserUserId(@Param("userId") String userId);
+
+    @Query("SELECT d FROM Diary d WHERE d.user.userId = :userId ORDER BY d.date DESC")
+    List<Diary> findLatestDiaryByUserId(@Param("userId") String userId);
 }

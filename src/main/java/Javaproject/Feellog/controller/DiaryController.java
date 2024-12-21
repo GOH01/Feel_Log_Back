@@ -4,13 +4,16 @@ import Javaproject.Feellog.DTO.DiaryContentRequest;
 import Javaproject.Feellog.DTO.DiarySummaryResponse;
 import Javaproject.Feellog.domain.Diary;
 import Javaproject.Feellog.domain.User;
+import Javaproject.Feellog.exception.InvalidTokenException;
 import Javaproject.Feellog.service.DiaryService;
 import Javaproject.Feellog.service.UserService;
+import Javaproject.Feellog.utils.JwtUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -20,6 +23,7 @@ import java.util.List;
 public class DiaryController {
     private final DiaryService diaryService;
     private final UserService userService;
+    private final JwtUtility jwtUtility;
 
     // 일기 저장
     @PostMapping("/save")
@@ -113,5 +117,15 @@ public class DiaryController {
         }
     }
 
+    @GetMapping("/latest")
+    public ResponseEntity<LocalDate> getLatestDate(@RequestHeader("Authorization") String token){
+        try{
+            String userToken= jwtUtility.bearerToken(token);
+            LocalDate latestDate=diaryService.getLatestDiary(userToken);
+            return ResponseEntity.ok(latestDate);
+        }catch (InvalidTokenException e){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+    }
 
 }

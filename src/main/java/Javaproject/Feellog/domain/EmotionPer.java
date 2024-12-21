@@ -1,5 +1,6 @@
 package Javaproject.Feellog.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,6 +11,7 @@ import org.hibernate.annotations.OnDeleteAction;
 @NoArgsConstructor
 @Getter @Setter
 @Entity
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class EmotionPer {
     @Id @GeneratedValue
     private Long id;
