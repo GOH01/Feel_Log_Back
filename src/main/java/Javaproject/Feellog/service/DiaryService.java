@@ -101,15 +101,5 @@ public class DiaryService {
         Diary diary=diaryRepository.findLatestDiaryByUserId(user.getUserId()).get(0);
         return diary.getDate();
     }
-
-    // 가장 최근 작성된 일기 날짜 반환
-    public LocalDate getLatestDiaryDate(String token) {
-        User user = userService.tokenToUser(token);
-        Long userId = user.getId();
-
-        return diaryRepository.findTopByUser_IdOrderByDateDesc(userId)
-                .map(Diary::getDate)
-                .orElseThrow(() -> new RuntimeException("작성된 일기가 없습니다."));
-    }
 }
 

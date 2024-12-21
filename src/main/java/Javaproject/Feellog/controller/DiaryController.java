@@ -162,10 +162,4 @@ public class DiaryController {
         }
     }
 
-    //가장 최근 작성
-    @GetMapping("/latest")
-    public ResponseEntity<LocalDate> getLatestDiaryDate(@RequestHeader("Authorization") String token) {
-        LocalDate latestDate = diaryService.getLatestDiaryDate(token);
-        return ResponseEntity.ok(latestDate);
-    }
 }
