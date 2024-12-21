@@ -17,9 +17,9 @@ public interface EmotionPerRepository extends JpaRepository<EmotionPer, Long> {
     // 감정별로 가장 높은 비율을 가진 날짜 검색
     @Query("SELECT ep.diary.date, MAX(ep.per) " +
             "FROM EmotionPer ep " +
-            "WHERE ep.emotion.emotionType = :emotionType " +
+            "WHERE ep.emotion.emotionType = :emotionType AND ep.diary.user.id = :userId " +
             "GROUP BY ep.diary.date " +
             "ORDER BY MAX(ep.per) DESC")
-    List<Object[]> findTopDatesByEmotion(@Param("emotionType") String emotionType);
+    List<Object[]> findTopDatesByEmotionAndUser(String emotionType, Long userId);
 
 }
