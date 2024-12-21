@@ -20,7 +20,7 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
     // userId와 date로 Diary 조회
     //Optional<Diary> findByUser_IdAndDate(Long userId, LocalDate date);
 
-    List<Diary> findByUserIdAndDate(Long userId, LocalDate date);
+    Diary findByUserIdAndDate(Long userId, LocalDate date);
 
     // 또는
     @Query("SELECT COUNT(d) FROM Diary d WHERE d.user.userId = :userId")

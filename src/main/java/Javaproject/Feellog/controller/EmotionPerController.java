@@ -27,9 +27,9 @@ public class EmotionPerController {
     private final DiaryService diaryService;
 
     @PostMapping("/api/emotion/analyze")
-    public String analyzeEmotionForDiary(@RequestParam String date){
+    public String analyzeEmotionForDiary(@RequestHeader("Authorization") String token, @RequestParam String date){
         LocalDate diaryDate = LocalDate.parse(date);
-        emotionPerService.analyzeAndSaveEmotionForDate(diaryDate);
+        emotionPerService.analyzeAndSaveEmotionForDate(token,diaryDate);
         return "감정 분석 및 저장 완료: "+date;
     }
 
@@ -49,13 +49,13 @@ public class EmotionPerController {
 
         try {
             String userId = userService.tokenToUser(token).getUserId();
-            List<Diary> diaries = diaryService.getDiariesByUserAndDate(userId, date);
+            Diary diary = diaryService.getDiariesByUserAndDate(userId, date);
 
-            if (diaries.isEmpty()) {
+            if (diary==null) {
                 return ResponseEntity.noContent().build();
             }
 
-            List<EmotionPer> emotions = emotionPerService.getEmotionPer(diaries.get(0));
+            List<EmotionPer> emotions = emotionPerService.getEmotionPer(diary);
 
             if (emotions.isEmpty()) {
                 return ResponseEntity.ok(Collections.emptyList()); // 감정 데이터가 없을 경우 빈 리스트 반환

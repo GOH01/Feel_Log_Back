@@ -109,7 +109,7 @@ public class DiaryController {
 
     // 특정 날짜의 일기 조회
     @GetMapping("/user/date")
-    public ResponseEntity<List<DiarySummaryResponse>> getDiariesByDate(
+    public ResponseEntity<DiarySummaryResponse> getDiariesByDate(
             @RequestHeader("Authorization") String token,
             @RequestParam String date
     ) {
@@ -118,12 +118,10 @@ public class DiaryController {
         String userId = userService.tokenToUser(tokenWithoutBearer).getUserId(); // 토큰 검증
 
         // 특정 날짜와 userId로 일기 검색
-        List<Diary> diaries = diaryService.getDiariesByUserAndDate(userId, date);
+        Diary diary = diaryService.getDiariesByUserAndDate(userId, date);
 
         // 응답 객체로 변환
-        List<DiarySummaryResponse> response = diaries.stream()
-                .map(DiarySummaryResponse::new)
-                .toList();
+        DiarySummaryResponse response = new DiarySummaryResponse(diary);
         return ResponseEntity.ok(response);
     }
 
