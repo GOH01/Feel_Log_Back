@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -103,4 +104,14 @@ public class UserController {
         }
     }
 
+    @GetMapping("/user/username")
+    public ResponseEntity<String> getUserName(@RequestHeader("Authorization") String token){
+        try{
+            String userToken=jwtUtility.bearerToken(token);
+            User user = userService.tokenToUser(userToken);
+            return ResponseEntity.ok(user.getUserName());
+        }catch (InvalidTokenException e){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+    }
 }

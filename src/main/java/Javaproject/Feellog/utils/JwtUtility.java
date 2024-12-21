@@ -23,17 +23,26 @@ public class JwtUtility {
                 .compact();
     }
 
-    public Claims validateToken(String token){
-        try{
+    public Claims validateToken(String token) {
+        try {
+            System.out.println("검증할 토큰: " + token); // 디버깅 로그 추가
             Claims claims = Jwts.parser()
                     .setSigningKey(secret.getBytes(StandardCharsets.UTF_8))
                     .parseClaimsJws(token)
                     .getBody();
             return claims;
-        }catch(SignatureException | ExpiredJwtException e){
-            throw new InvalidTokenException("유효하지 않은 토큰");
-        }catch(Exception e){
-            throw new InvalidTokenException("토큰 검증 중 오류 발생");
+        } catch (ExpiredJwtException e) {
+            System.err.println("토큰 만료: " + e.getMessage()); // 만료 로그 출력
+            throw new InvalidTokenException("토큰이 만료되었습니다.");
+        } catch (SignatureException e) {
+            System.err.println("서명 오류: " + e.getMessage()); // 서명 오류 로그 출력
+            throw new InvalidTokenException("유효하지 않은 서명입니다.");
+        } catch (JwtException e) {
+            System.err.println("JWT 예외: " + e.getMessage()); // JWT 관련 예외 처리
+            throw new InvalidTokenException("JWT 검증 중 오류 발생");
+        } catch (Exception e) {
+            System.err.println("알 수 없는 예외 발생: " + e.getMessage()); // 기타 예외 처리
+            throw new InvalidTokenException("토큰 검증 중 알 수 없는 오류 발생");
         }
     }
 

@@ -213,6 +213,17 @@ public class EmotionPerService {
                 .doubleValue();
     }
 
+    public List<EmotionPer> getEmotionPer(Diary diary) {
+        List<EmotionPer> emotions = emotionPerRepository.findByDiaryId(diary.getId());
+
+        if (emotions == null || emotions.isEmpty()) {
+            // 로그에 데이터가 없음을 기록
+            System.out.println("No emotions found for diary ID: " + diary.getId());
+        }
+
+        return emotions;
+    }
+
     public Map<String, Double> getMonthlyEmotionStatistics(int year, int month) {
         // 1. 해당 월의 데이터 조회
         List<EmotionPer> emotionPerList = emotionPerRepository.findByMonthAndYear(month, year);

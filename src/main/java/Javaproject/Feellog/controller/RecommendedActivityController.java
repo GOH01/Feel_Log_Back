@@ -29,7 +29,7 @@ public class RecommendedActivityController {
     @GetMapping("/diary/{diaryId}")
     public ResponseEntity<List<Map<String, String>>> getRecommendationByDiary(@PathVariable Long diaryId) {
         // 1. 해당 일기의 감정 데이터 가져오기
-        List<EmotionPer> emotionPers = emotionPerRepository.findByDiary_Id(diaryId);
+        List<EmotionPer> emotionPers = emotionPerRepository.findByDiaryId(diaryId);
 
         if (emotionPers.isEmpty()) {
             throw new IllegalArgumentException("해당 일기에 대한 감정 데이터가 없습니다.");

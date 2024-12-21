@@ -3,9 +3,13 @@ package Javaproject.Feellog.controller;
 import Javaproject.Feellog.DTO.DiaryContentRequest;
 import Javaproject.Feellog.DTO.DiarySummaryResponse;
 import Javaproject.Feellog.domain.Diary;
+import Javaproject.Feellog.domain.User;
+import Javaproject.Feellog.exception.InvalidTokenException;
 import Javaproject.Feellog.service.DiaryService;
 import Javaproject.Feellog.service.UserService;
+import Javaproject.Feellog.utils.JwtUtility;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +26,7 @@ import java.util.Map;
 public class DiaryController {
     private final DiaryService diaryService;
     private final UserService userService;
+    private final JwtUtility jwtUtility;
 
     // 일기 저장
     @PostMapping("/save")
@@ -121,14 +126,41 @@ public class DiaryController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/user/{userId}/count")
-    public ResponseEntity<Long> getUserDiariesCount(@PathVariable String userId) {
+    @GetMapping("/user/count")
+    public ResponseEntity<Long> getUserDiariesCount(@RequestHeader("Authorization") String token) {
+        try {
+            // Bearer 토큰 처리
+            String tokenWithoutBearer = token.replace("Bearer ", "").trim();
 
-        // 특정 유저의 일기 개수를 가져오는 서비스 호출
-        long diaryCount = diaryService.getUserDiaryCount(userId);
-        return ResponseEntity.ok(diaryCount);
+            // 디버깅을 위한 로그
+            System.out.println("받은 토큰: " + tokenWithoutBearer);
+
+            User user = userService.tokenToUser(tokenWithoutBearer);
+            System.out.println("찾은 사용자 ID: " + user.getUserId());
+
+            long diaryCount = diaryService.getUserDiaryCount(user.getUserId());
+            System.out.println("조회된 일기 수: " + diaryCount);
+
+            return ResponseEntity.ok(diaryCount);
+        } catch (Exception e) {
+            // 상세한 에러 로깅
+            System.err.println("일기 수 조회 중 에러 발생: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(-1L); // 에러 시 -1 반환
+        }
     }
 
+    @GetMapping("/latest")
+    public ResponseEntity<LocalDate> getLatestDate(@RequestHeader("Authorization") String token){
+        try{
+            String userToken= jwtUtility.bearerToken(token);
+            LocalDate latestDate=diaryService.getLatestDiary(userToken);
+            return ResponseEntity.ok(latestDate);
+        }catch (InvalidTokenException e){
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
+    }
 
     //가장 최근 작성
     @GetMapping("/latest")

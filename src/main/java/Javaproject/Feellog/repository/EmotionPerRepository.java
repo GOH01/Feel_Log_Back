@@ -12,8 +12,8 @@ import java.util.List;
 public interface EmotionPerRepository extends JpaRepository<EmotionPer, Long> {
     @Query("SELECT e FROM EmotionPer e WHERE MONTH(e.diary.date) = :month AND YEAR(e.diary.date) = :year")
     List<EmotionPer> findByMonthAndYear(@Param("month") int month, @Param("year") int year);
-    List<EmotionPer> findByDiary_Id(Long diaryId);
 
+    List<EmotionPer> findByDiaryId(Long diaryId);
     // 감정별로 가장 높은 비율을 가진 날짜 검색
     @Query("SELECT ep.diary.date, MAX(ep.per) " +
             "FROM EmotionPer ep " +
@@ -21,4 +21,5 @@ public interface EmotionPerRepository extends JpaRepository<EmotionPer, Long> {
             "GROUP BY ep.diary.date " +
             "ORDER BY MAX(ep.per) DESC")
     List<Object[]> findTopDatesByEmotion(@Param("emotionType") String emotionType);
+
 }

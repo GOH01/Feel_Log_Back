@@ -2,6 +2,7 @@ package Javaproject.Feellog.service;
 
 import Javaproject.Feellog.domain.Diary;
 import Javaproject.Feellog.domain.User;
+import Javaproject.Feellog.exception.IdNotFoundException;
 import Javaproject.Feellog.repository.DiaryRepository;
 import Javaproject.Feellog.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,8 @@ import java.util.List;
 public class DiaryService {
     private final DiaryRepository diaryRepository;
     private final UserRepository userRepository;
-    private final UserService userService;
+    private  final UserService userService;
+
 
     // 일기 저장
     @Transactional
@@ -88,7 +90,16 @@ public class DiaryService {
         if (user == null) {
             throw new RuntimeException("User not found");
         }
-        return diaryRepository.countByUserId(user.getId());
+        return diaryRepository.countByUserUserId(user.getUserId());
+    }
+
+    public LocalDate getLatestDiary(String token){
+        User user = userService.tokenToUser(token);
+        if(user==null){
+            throw new IdNotFoundException("사용자를 찾을 수 없습니다.");
+        }
+        Diary diary=diaryRepository.findLatestDiaryByUserId(user.getUserId()).get(0);
+        return diary.getDate();
     }
 
     // 가장 최근 작성된 일기 날짜 반환
