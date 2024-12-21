@@ -24,13 +24,16 @@ public class DiaryService {
     // 일기 저장
     @Transactional
     public Diary saveDiary(String userId, String content) {
-        // userId로 User 객체 조회
         User user = userRepository.findByUserId(userId);
-       /* if (user == null) {
-            throw new RuntimeException("User not found with userId: " + userId);
-        }*/
+        LocalDate today = LocalDate.now();
 
-        Diary diary = new Diary(user, LocalDate.now(), content);
+        // 사용자가 오늘 날짜에 작성한 일기가 있는지 확인
+        boolean exists = diaryRepository.existsByUserIdAndDate(user.getId(), today);
+        if (exists) {
+            throw new RuntimeException("해당 날짜에 이미 작성한 일기가 있습니다. 날짜: " + today);
+        }
+
+        Diary diary = new Diary(user, today, content);
         return diaryRepository.save(diary);
     }
 

@@ -30,19 +30,20 @@ public class DiaryController {
 
     // 일기 저장
     @PostMapping("/save")
-    public ResponseEntity<DiarySummaryResponse> saveDiary(
+    public ResponseEntity<?> saveDiary(
             @RequestHeader("Authorization") String token,
             @RequestBody DiaryContentRequest request
     ) {
-        // "Bearer " 제거
-        String tokenWithoutBearer = token.replace("Bearer ", "").trim();
+        try {
+            String tokenWithoutBearer = token.replace("Bearer ", "").trim();
+            String userId = userService.tokenToUser(tokenWithoutBearer).getUserId();
 
-        String userId = userService.tokenToUser(tokenWithoutBearer).getUserId(); // 토큰에서 userId 추출
-        Diary savedDiary = diaryService.saveDiary(userId, request.getContent());
+            Diary savedDiary = diaryService.saveDiary(userId, request.getContent());
 
-        // 저장된 Diary를 DiarySummaryResponse로 변환하여 반환
-        DiarySummaryResponse response = new DiarySummaryResponse(savedDiary);
-        return ResponseEntity.ok(response);
+            return ResponseEntity.ok(new DiarySummaryResponse(savedDiary));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // 특정 날짜의 일기 수정
