@@ -70,34 +70,6 @@ public class DiaryService {
     }
 
 
-//    // 일기 수정
-//    @Transactional
-//    public Diary updateDiary(String userId, Long diaryId, String content) {
-//        // 일기 ID로 Diary 조회
-//        Diary diary = diaryRepository.findById(diaryId)
-//                .orElseThrow(() -> new RuntimeException("Diary not found"));
-////        // 요청한 userId와 Diary의 user가 동일한지 확인
-////        if (!diary.getUser().getUserId().equals(userId)) {
-////            throw new RuntimeException("Permission denied");
-////        }
-//        // 내용 수정 및 저장
-//        diary.updateDiary(content);
-//        return diaryRepository.save(diary);
-//    }
-//
-//    // 일기 삭제
-//    @Transactional
-//    public void deleteDiary(String userId, Long diaryId) {
-//        // 일기 ID로 Diary 조회
-//        Diary diary = diaryRepository.findById(diaryId)
-//                .orElseThrow(() -> new RuntimeException("Diary not found"));
-////        // 요청한 userId와 Diary의 user가 동일한지 확인
-////        if (!diary.getUser().getUserId().equals(userId)) {
-////            throw new RuntimeException("Permission denied");
-////        }
-//        diaryRepository.delete(diary);
-//    }
-
 
     // 특정 유저의 특정 날짜 일기 조회
     public List<Diary> getDiariesByUserAndDate(String userId, String date) {
