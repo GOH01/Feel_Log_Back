@@ -32,4 +32,6 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
     // Optional로 반환하고 싶다면
     Optional<Diary> findTopByUser_IdOrderByDateDesc(Long userId);
 
+    boolean existsByUserIdAndDate(Long userId, LocalDate date);
+
 }
