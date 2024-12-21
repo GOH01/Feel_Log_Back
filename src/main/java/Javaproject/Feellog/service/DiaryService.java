@@ -44,13 +44,12 @@ public class DiaryService {
         User user = userService.tokenToUser(token);
         Long userId = user.getId();
 
-        List<Diary> diaries = diaryRepository.findByUserIdAndDate(userId, date);
+        Diary diary = diaryRepository.findByUserIdAndDate(userId, date);
 
-        if (diaries.isEmpty()) {
+        if (diary==null) {
             throw new RuntimeException("해당 날짜의 일기를 찾을 수 없습니다. 날짜: " + date);
         }
 
-        Diary diary = diaries.get(0);
         diary.updateDiary(content);
 
         return diaryRepository.save(diary);
@@ -66,27 +65,29 @@ public class DiaryService {
         User user = userService.tokenToUser(token); // 토큰을 이용해 유저 가져오기
         Long userId = user.getId();
 
-        List<Diary> diaries = diaryRepository.findByUserIdAndDate(userId, date); // 해당 날짜의 일기 조회
-        if (diaries.isEmpty()) {
+        Diary diary = diaryRepository.findByUserIdAndDate(userId, date); // 해당 날짜의 일기 조회
+        if (diary==null) {
             throw new RuntimeException("해당 날짜의 일기를 찾을 수 없습니다.");
         }
 
-        Diary diary = diaries.get(0); // 해당 날짜의 첫 번째 일기 선택
         diaryRepository.delete(diary); // 일기 삭제
     }
 
 
 
     // 특정 유저의 특정 날짜 일기 조회
-    public List<Diary> getDiariesByUserAndDate(String userId, String date) {
+    public Diary getDiariesByUserAndDate(String userId, String date) {
         // userId를 사용해 User 엔티티 조회
         User user = userRepository.findByUserId(userId);
 
         // 문자열로 받은 날짜를 LocalDate로 변환
         LocalDate parsedDate = LocalDate.parse(date);
-
+        Diary diary=diaryRepository.findByUserIdAndDate(user.getId(), parsedDate);
+        if (diary==null){
+            throw new RuntimeException("해당 일기를 찾을 수 없음");
+        }
         // 해당 유저와 날짜에 해당하는 일기 검색
-        return diaryRepository.findByUserIdAndDate(user.getId(), parsedDate);
+        return diary;
     }
     public long getUserDiaryCount(String userId) {
         // User를 조회한 뒤, DiaryRepository에서 일기 개수 가져오기

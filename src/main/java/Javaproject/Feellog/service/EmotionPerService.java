@@ -3,9 +3,12 @@ package Javaproject.Feellog.service;
 import Javaproject.Feellog.domain.Diary;
 import Javaproject.Feellog.domain.Emotion;
 import Javaproject.Feellog.domain.EmotionPer;
+import Javaproject.Feellog.domain.User;
+import Javaproject.Feellog.exception.IdNotFoundException;
 import Javaproject.Feellog.repository.DiaryRepository;
 import Javaproject.Feellog.repository.EmotionPerRepository;
 import Javaproject.Feellog.repository.EmotionRepository;
+import Javaproject.Feellog.utils.JwtUtility;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -39,15 +42,22 @@ public class EmotionPerService {
     private final EmotionPerRepository emotionPerRepository;
     private final DiaryRepository diaryRepository;
     private final EmotionRepository emotionRepository;
+    private final JwtUtility jwtUtility;
+    private final UserService userService;
 
     @Value("${api.url}")
     private String API_URL;
     @Value("${api.key}") @Getter
     private String API_KEY;
 
-    public void analyzeAndSaveEmotionForDate(LocalDate date){
+    public void analyzeAndSaveEmotionForDate(String token,LocalDate date){
+        User user = userService.tokenToUser(token);
+        if(user==null){
+            throw new IdNotFoundException("사용자 찾을 수 없음");
+        }
+
         // 1. 특정 날짜의 일기 조회
-        Diary diary = diaryRepository.findByDate(date);
+        Diary diary = diaryRepository.findByUserIdAndDate(user.getId(), date);
         if (diary == null) throw new IllegalArgumentException("해당 날짜의 일기를 찾을 수 없습니다.");
 
         // 2. 감정 분석 API 호출
