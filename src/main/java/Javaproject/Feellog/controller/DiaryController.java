@@ -30,7 +30,7 @@ public class DiaryController {
 
     // 일기 저장
     @PostMapping("/save")
-    public ResponseEntity<?> saveDiary(
+    public ResponseEntity<DiarySummaryResponse> saveDiary(
             @RequestHeader("Authorization") String token,
             @RequestBody DiaryContentRequest request
     ) {
@@ -42,7 +42,8 @@ public class DiaryController {
 
             return ResponseEntity.ok(new DiarySummaryResponse(savedDiary));
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(null);
         }
     }
 

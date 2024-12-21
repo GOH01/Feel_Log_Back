@@ -6,6 +6,7 @@ import Javaproject.Feellog.domain.EmotionPer;
 import Javaproject.Feellog.service.DiaryService;
 import Javaproject.Feellog.service.EmotionPerService;
 import Javaproject.Feellog.service.UserService;
+import Javaproject.Feellog.utils.JwtUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,11 +26,13 @@ public class EmotionPerController {
     private final EmotionPerService emotionPerService;
     private final UserService userService;
     private final DiaryService diaryService;
+    private final JwtUtility jwtUtility;
 
     @PostMapping("/api/emotion/analyze")
     public String analyzeEmotionForDiary(@RequestHeader("Authorization") String token, @RequestParam String date){
+        String userToken= jwtUtility.bearerToken(token);
         LocalDate diaryDate = LocalDate.parse(date);
-        emotionPerService.analyzeAndSaveEmotionForDate(token,diaryDate);
+        emotionPerService.analyzeAndSaveEmotionForDate(userToken,diaryDate);
         return "감정 분석 및 저장 완료: "+date;
     }
 
