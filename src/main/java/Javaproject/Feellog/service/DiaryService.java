@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -101,8 +102,9 @@ public class DiaryService {
         if(user==null){
             throw new IdNotFoundException("사용자를 찾을 수 없습니다.");
         }
-        Diary diary=diaryRepository.findLatestDiaryByUserId(user.getUserId()).get(0);
-        return diary.getDate();
+        return diaryRepository.findTopByUser_UserIdOrderByDateDesc(user.getUserId())
+                .map(Diary::getDate)
+                .orElseThrow(() -> new NoSuchElementException("사용자의 일기가 존재하지 않습니다."));
     }
 }
 

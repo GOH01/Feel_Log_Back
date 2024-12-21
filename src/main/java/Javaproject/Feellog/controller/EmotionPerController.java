@@ -42,7 +42,7 @@ public class EmotionPerController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/emotionper")
+    @GetMapping("/emotion/result")
     public ResponseEntity<List<EmotionPerResponse>> getEmotionsByDate(
             @RequestHeader("Authorization") String token,
             @RequestParam String date) {

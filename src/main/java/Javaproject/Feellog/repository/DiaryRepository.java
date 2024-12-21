@@ -26,9 +26,9 @@ public interface DiaryRepository extends JpaRepository<Diary, Long> {
     @Query("SELECT COUNT(d) FROM Diary d WHERE d.user.userId = :userId")
     long countByUserUserId(@Param("userId") String userId);
 
-    @Query("SELECT d FROM Diary d WHERE d.user.userId = :userId ORDER BY d.date DESC")
-    List<Diary> findLatestDiaryByUserId(@Param("userId") String userId);
-
+    @Query(value = "SELECT * FROM diary d WHERE d.user_id = :userId ORDER BY d.date DESC LIMIT 1", nativeQuery = true)
+    Optional<Diary> findLatestDiaryByUserId(@Param("userId") String userId);
+    Optional<Diary> findTopByUser_UserIdOrderByDateDesc(String userId);
     // Optional로 반환하고 싶다면
     Optional<Diary> findTopByUser_IdOrderByDateDesc(Long userId);
 
