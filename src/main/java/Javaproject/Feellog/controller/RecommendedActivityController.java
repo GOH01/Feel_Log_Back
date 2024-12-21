@@ -1,15 +1,20 @@
 package Javaproject.Feellog.controller;
 
 import Javaproject.Feellog.DTO.RecommendedActivityDTO;
+import Javaproject.Feellog.domain.Diary;
 import Javaproject.Feellog.domain.EmotionPer;
 import Javaproject.Feellog.domain.RecommendedActivity;
 import Javaproject.Feellog.repository.EmotionPerRepository;
 import Javaproject.Feellog.repository.RecommendedActivityRepository;
+import Javaproject.Feellog.service.DiaryService;
 import Javaproject.Feellog.service.RecommendedActivityService;
+import Javaproject.Feellog.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.*;
 
 @RestController
@@ -20,16 +25,29 @@ public class RecommendedActivityController {
     private final RecommendedActivityService recommendedActivityService;
     private final EmotionPerRepository emotionPerRepository; // 감정 데이터 조회
     private final RecommendedActivityRepository recommendedActivityRepository; // 추천 활동 조회
+    private final UserService userService;
+    private final DiaryService diaryService;
 
     /**
      * 일기별 추천 활동 반환
-     * @param diaryId 일기의 ID
+     * @param 일기의 ID
      * @return 추천 활동 정보
      */
-    @GetMapping("/diary/{diaryId}")
-    public ResponseEntity<List<Map<String, String>>> getRecommendationByDiary(@PathVariable Long diaryId) {
-        // 1. 해당 일기의 감정 데이터 가져오기
-        List<EmotionPer> emotionPers = emotionPerRepository.findByDiaryId(diaryId);
+    @GetMapping("/diary/date")
+    public ResponseEntity<List<Map<String, String>>> getRecommendationByDiary(
+            @RequestHeader("Authorization") String token,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+            ) {
+        // 1. 토큰에서 사용자 ID 추출
+
+        String userId = userService.tokenToUser(token.replace("Bearer ", "").trim()).getUserId();
+
+        // 2. 사용자 ID와 날짜를 사용해 일기 검색
+        Diary diary = diaryService.getDiariesByUserAndDate(userId, date.toString());
+        if (diary==null) {
+            throw new IllegalArgumentException("해당 날짜에 대한 일기가 없습니다.");
+        }
+        List<EmotionPer> emotionPers = emotionPerRepository.findByDiaryId(diary.getId());
 
         if (emotionPers.isEmpty()) {
             throw new IllegalArgumentException("해당 일기에 대한 감정 데이터가 없습니다.");
