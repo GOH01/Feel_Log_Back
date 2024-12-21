@@ -40,26 +40,29 @@ import java.util.*;
 public class EmotionPerService {
 
     private final EmotionPerRepository emotionPerRepository;
-    private final DiaryRepository diaryRepository;
     private final EmotionRepository emotionRepository;
-    private final JwtUtility jwtUtility;
+    private final DiaryRepository diaryRepository;
     private final UserService userService;
+    private final DiaryService diaryService;
 
     @Value("${api.url}")
     private String API_URL;
     @Value("${api.key}") @Getter
     private String API_KEY;
 
-    public void analyzeAndSaveEmotionForDate(String token,LocalDate date){
-        User user = userService.tokenToUser(token);
-        if(user==null){
+    @Transactional
+    public void updateEmotionDiary(String token,LocalDate date, String content){
+        Long userId = userService.tokenToUser(token).getId();
+        if(userId==null){
             throw new IdNotFoundException("사용자 찾을 수 없음");
         }
 
         // 1. 특정 날짜의 일기 조회
-        Diary diary = diaryRepository.findByUserIdAndDate(user.getId(), date);
+        Diary diary = diaryRepository.findByUserIdAndDate(userId, date);
         if (diary == null) throw new IllegalArgumentException("해당 날짜의 일기를 찾을 수 없습니다.");
 
+        diary.updateDiary(content);
+        diaryRepository.save(diary);
         // 2. 감정 분석 API 호출
         JsonObject response = callEmotionAnalysisAPI(diary.getContent());
 
@@ -84,11 +87,56 @@ public class EmotionPerService {
         List<Double> normalizedScores = normalizeScores(scores);
 
         // 5. joy와 anger의 score 스왑
-        Map<String, Double> swappedScores = swapJoyAndAnger(labels, normalizedScores);
+        Map<String, Double> swappedScores = swap(labels, normalizedScores);
 
         // 6. 결과 저장
         saveEmotionPer(diary, swappedScores);
     }
+
+
+    @Transactional
+    public void analyzeAndSaveEmotionForDate(String userToken, String content) {
+        try {
+            // 1. 사용자 정보 추출
+            String userId = userService.tokenToUser(userToken).getUserId();
+
+            // 2. 일기 저장 (saveDiary 호출)
+            Diary diary = diaryService.saveDiary(userId, content); // '일기 내용'은 클라이언트에서 받아와야 함
+
+            // 3. 감정 분석 API 호출 (예외 발생 가능)
+            JsonObject emotionData = callEmotionAnalysisAPI(diary.getContent());
+
+            if (!emotionData.has("scored_labels")) {
+                throw new IllegalArgumentException("API 응답이 잘못되었습니다: 'scored_labels' 필드가 없습니다.");
+            }
+
+            JsonArray scoredLabelsArray = emotionData.getAsJsonArray("scored_labels");
+
+            // 3. 'scored_labels' 배열에서 label과 score 추출
+            List<String> labels = new ArrayList<>();
+            List<Double> scores = new ArrayList<>();
+
+            for (int i = 0; i < scoredLabelsArray.size(); i++) {
+                JsonObject labelScore = scoredLabelsArray.get(i).getAsJsonObject();
+                labels.add(labelScore.get("label").getAsString());
+                scores.add(labelScore.get("score").getAsDouble());
+            }
+            // 4. 감정 비율 정규화
+            List<Double> normalizedScores = normalizeScores(scores);
+
+            // 5. joy와 anger의 score 스왑
+            Map<String, Double> swappedScores = swap(labels, normalizedScores);
+
+            // 6. 결과 저장
+            saveEmotionPer(diary, swappedScores);
+
+        } catch (Exception e) {
+            // 예외 발생 시 트랜잭션 롤백
+            throw new RuntimeException("감정 분석 중 오류가 발생했습니다. 저장이 취소되었습니다.", e);
+        }
+    }
+
+
 
     // JsonArray -> List<String> 변환 메서드
     private List<String> convertToStringList(JsonArray jsonArray) {
@@ -159,15 +207,19 @@ public class EmotionPerService {
         }
     }
 
-    private Map<String, Double> swapJoyAndAnger(List<String> labels, List<Double> scores) {
-        double joyValue = 0.0, angerValue = 0.0;
+    private Map<String, Double> swap(List<String> labels, List<Double> scores) {
+        double loveValue = 0.0, angerValue = 0.0 , surpriseValue=0.0, fearValue=0.0;
         Map<String, Double> swappedScores = new HashMap<>();
 
         for (int i = 0; i < labels.size(); i++) {
-            if("joy".equalsIgnoreCase(labels.get(i))){
-                joyValue = scores.get(i);
+            if("love".equalsIgnoreCase(labels.get(i))){
+                loveValue = scores.get(i);
             }else if ("anger".equalsIgnoreCase(labels.get(i))){
                 angerValue = scores.get(i);
+            }else if ("fear".equalsIgnoreCase(labels.get(i))){
+                fearValue = scores.get(i);
+            }else if ("surprise".equalsIgnoreCase(labels.get(i))){
+                surpriseValue = scores.get(i);
             }
         }
 
@@ -175,11 +227,15 @@ public class EmotionPerService {
             String label = labels.get(i);
             double value = scores.get(i);
 
-            if ("joy".equalsIgnoreCase(label)) {
+            if ("love".equalsIgnoreCase(label)) {
                 swappedScores.put(label, roundToTwoDecimalPlaces(angerValue)); // anger 값을 joy에 저장
             } else if ("anger".equalsIgnoreCase(label)) {
-                swappedScores.put(label, roundToTwoDecimalPlaces(joyValue)); // joy 값을 anger에 저장
-            } else {
+                swappedScores.put(label, roundToTwoDecimalPlaces(loveValue)); // joy 값을 anger에 저장
+            } else if ("fear".equalsIgnoreCase(label)) {
+                swappedScores.put(label, roundToTwoDecimalPlaces(surpriseValue));
+            }else if ("surprise".equalsIgnoreCase(label)) {
+                swappedScores.put(label, roundToTwoDecimalPlaces(fearValue));
+            }else {
                 swappedScores.put(label, roundToTwoDecimalPlaces(value)); // 다른 감정은 그대로
             }
         }

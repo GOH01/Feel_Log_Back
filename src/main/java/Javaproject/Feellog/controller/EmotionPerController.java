@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -28,12 +29,63 @@ public class EmotionPerController {
     private final DiaryService diaryService;
     private final JwtUtility jwtUtility;
 
-    @PostMapping("/api/emotion/analyze")
-    public String analyzeEmotionForDiary(@RequestHeader("Authorization") String token, @RequestParam String date){
-        String userToken= jwtUtility.bearerToken(token);
-        LocalDate diaryDate = LocalDate.parse(date);
-        emotionPerService.analyzeAndSaveEmotionForDate(userToken,diaryDate);
-        return "감정 분석 및 저장 완료: "+date;
+
+
+    @PostMapping("/analyze")
+    public ResponseEntity<String> analyzeEmotionForDiary(
+            @RequestHeader("Authorization") String token,
+            @RequestBody String content
+    ) {
+        try {
+            String userToken = jwtUtility.bearerToken(token);
+            emotionPerService.analyzeAndSaveEmotionForDate(userToken, content);
+            return ResponseEntity.ok("감정 분석 및 저장이 완료되었습니다.");
+
+        } catch (RuntimeException e) {
+            // 중복 일기 작성 등 일반적인 오류 처리
+            if (e.getMessage().contains("작성한 일기")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            }
+
+            // 감정 분석 API 오류
+            if (e.getMessage().contains("감정 분석 중 오류")) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("감정 분석 중 오류가 발생하여 저장이 취소되었습니다.");
+            }
+
+            // 기타 오류
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("알 수 없는 오류가 발생했습니다.");
+        }
+    }
+    @PutMapping("/diary/update")
+    public ResponseEntity<String> updateEmotionForDiary(@RequestHeader("Authorization") String token, @RequestParam String date, @RequestBody String content) {
+        try {
+            // 1. Bearer 토큰 처리
+            String userToken = jwtUtility.bearerToken(token);
+
+            // 2. 날짜 파싱
+            LocalDate diaryDate = LocalDate.parse(date);
+
+            // 3. 감정 분석 및 저장 수행
+            emotionPerService.updateEmotionDiary(userToken, diaryDate, content);
+
+            // 4. 성공 메시지 반환
+            return ResponseEntity.ok("감정 분석 및 저장 완료: " + date);
+        } catch (DateTimeParseException e) {
+            // 잘못된 날짜 형식 처리
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("잘못된 날짜 형식입니다. yyyy-MM-dd 형식으로 입력해주세요.");
+        } catch (RuntimeException e) {
+            // 429 요청 제한 초과 처리
+            if (e.getMessage().contains("429")) {
+                return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body("API 요청 제한 초과. 잠시 후 다시 시도해주세요.");
+            }
+            // 기타 런타임 오류 처리
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("감정 분석 중 오류가 발생했습니다.");
+        } catch (Exception e) {
+            // 기타 예상치 못한 예외 처리
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("알 수 없는 오류가 발생했습니다.");
+        }
     }
 
     @GetMapping("/statistics/monthly")

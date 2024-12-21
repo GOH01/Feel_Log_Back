@@ -60,7 +60,6 @@ public class DiaryController {
         // 반환할 데이터를 Map으로 구성
         Map<String, String> response = new HashMap<>();
         response.put("updatedContent", updatedDiary.getContent());
-        response.put("updateAt", updatedDiary.getUpdateAt().toString());
 
         return ResponseEntity.ok(response);
     }
