@@ -8,21 +8,28 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DiaryRepository extends JpaRepository<Diary, Long> {
 
     Diary findByDate(LocalDate date);
 
-    List<Diary> findByUserId(Long userId);
+    //List<Diary> findByUserId(Long userId);
+
+    // userId와 date로 Diary 조회
+    //Optional<Diary> findByUser_IdAndDate(Long userId, LocalDate date);
 
     List<Diary> findByUserIdAndDate(Long userId, LocalDate date);
 
-    long countByUser_UserId(String userId);
     // 또는
     @Query("SELECT COUNT(d) FROM Diary d WHERE d.user.userId = :userId")
     long countByUserUserId(@Param("userId") String userId);
 
     @Query("SELECT d FROM Diary d WHERE d.user.userId = :userId ORDER BY d.date DESC")
     List<Diary> findLatestDiaryByUserId(@Param("userId") String userId);
+
+    // Optional로 반환하고 싶다면
+    Optional<Diary> findTopByUser_IdOrderByDateDesc(Long userId);
+
 }

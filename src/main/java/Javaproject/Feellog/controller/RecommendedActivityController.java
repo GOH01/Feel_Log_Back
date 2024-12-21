@@ -27,7 +27,7 @@ public class RecommendedActivityController {
      * @return 추천 활동 정보
      */
     @GetMapping("/diary/{diaryId}")
-    public ResponseEntity<Map<String, String>> getRecommendationByDiary(@PathVariable Long diaryId) {
+    public ResponseEntity<List<Map<String, String>>> getRecommendationByDiary(@PathVariable Long diaryId) {
         // 1. 해당 일기의 감정 데이터 가져오기
         List<EmotionPer> emotionPers = emotionPerRepository.findByDiaryId(diaryId);
 
@@ -49,28 +49,34 @@ public class RecommendedActivityController {
             throw new IllegalArgumentException("해당 감정에 대한 추천 활동이 없습니다.");
         }
 
-        // 랜덤으로 추천 활동 선택
-        Random random = new Random();
-        RecommendedActivity randomActivity = activities.get(random.nextInt(activities.size()));
+        // 랜덤으로 추천 활동 선택 (3개)
+        Collections.shuffle(activities); // 리스트를 랜덤하게 섞음
+        List<RecommendedActivity> randomActivities = activities.stream()
+                .limit(3) // 상위 3개 선택
+                .toList();
 
-        if (randomActivity == null || randomActivity.getName() == null || randomActivity.getDescription() == null) {
+        if (randomActivities.isEmpty()) {
             throw new IllegalStateException("추천 활동 데이터가 불완전합니다.");
         }
 
         // 4. 응답 데이터 구성
-        Map<String, String> response = new HashMap<>();
-        response.put("recommendedActivity", randomActivity.getName());
-        response.put("description", randomActivity.getDescription());
+        List<Map<String, String>> responseList = new ArrayList<>();
+        for (RecommendedActivity activity : randomActivities) {
+            Map<String, String> response = new HashMap<>();
+            response.put("해보아요!!", activity.getName());
+            response.put("이렇게!!", activity.getDescription());
+            responseList.add(response);
+        }
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(responseList);
     }
 
 
     //랜덤 추천 활동 조회
-    @GetMapping
-    public ResponseEntity<RecommendedActivityDTO.ResponseDTO> getRandomActivity(@RequestParam String emotionType) {
-        return ResponseEntity.ok(recommendedActivityService.getRandomActivity(emotionType));
-    }
+//    @GetMapping
+//    public ResponseEntity<RecommendedActivityDTO.ResponseDTO> getRandomActivity(@RequestParam String emotionType) {
+//        return ResponseEntity.ok(recommendedActivityService.getRandomActivity(emotionType));
+//    }
 
     //추천 활동 생성
     @PostMapping

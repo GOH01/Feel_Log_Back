@@ -19,6 +19,7 @@ public class DiaryService {
     private final UserRepository userRepository;
     private  final UserService userService;
 
+
     // 일기 저장
     @Transactional
     public Diary saveDiary(String userId, String content) {
@@ -33,33 +34,71 @@ public class DiaryService {
     }
 
 
-    // 일기 수정
+    // 특정 날짜의 일기 수정
     @Transactional
-    public Diary updateDiary(String userId, Long diaryId, String content) {
-        // 일기 ID로 Diary 조회
-        Diary diary = diaryRepository.findById(diaryId)
-                .orElseThrow(() -> new RuntimeException("Diary not found"));
-//        // 요청한 userId와 Diary의 user가 동일한지 확인
-//        if (!diary.getUser().getUserId().equals(userId)) {
-//            throw new RuntimeException("Permission denied");
-//        }
-        // 내용 수정 및 저장
+    public Diary updateDiary(String content, String token, LocalDate date) {
+        User user = userService.tokenToUser(token);
+        Long userId = user.getId();
+
+        List<Diary> diaries = diaryRepository.findByUserIdAndDate(userId, date);
+
+        if (diaries.isEmpty()) {
+            throw new RuntimeException("해당 날짜의 일기를 찾을 수 없습니다. 날짜: " + date);
+        }
+
+        Diary diary = diaries.get(0);
         diary.updateDiary(content);
+
         return diaryRepository.save(diary);
     }
 
-    // 일기 삭제
+
+
+
+
+    // 특정 날짜의 일기 삭제
     @Transactional
-    public void deleteDiary(String userId, Long diaryId) {
-        // 일기 ID로 Diary 조회
-        Diary diary = diaryRepository.findById(diaryId)
-                .orElseThrow(() -> new RuntimeException("Diary not found"));
-//        // 요청한 userId와 Diary의 user가 동일한지 확인
-//        if (!diary.getUser().getUserId().equals(userId)) {
-//            throw new RuntimeException("Permission denied");
-//        }
-        diaryRepository.delete(diary);
+    public void deleteDiary(String token, LocalDate date) {
+        User user = userService.tokenToUser(token); // 토큰을 이용해 유저 가져오기
+        Long userId = user.getId();
+
+        List<Diary> diaries = diaryRepository.findByUserIdAndDate(userId, date); // 해당 날짜의 일기 조회
+        if (diaries.isEmpty()) {
+            throw new RuntimeException("해당 날짜의 일기를 찾을 수 없습니다.");
+        }
+
+        Diary diary = diaries.get(0); // 해당 날짜의 첫 번째 일기 선택
+        diaryRepository.delete(diary); // 일기 삭제
     }
+
+
+//    // 일기 수정
+//    @Transactional
+//    public Diary updateDiary(String userId, Long diaryId, String content) {
+//        // 일기 ID로 Diary 조회
+//        Diary diary = diaryRepository.findById(diaryId)
+//                .orElseThrow(() -> new RuntimeException("Diary not found"));
+////        // 요청한 userId와 Diary의 user가 동일한지 확인
+////        if (!diary.getUser().getUserId().equals(userId)) {
+////            throw new RuntimeException("Permission denied");
+////        }
+//        // 내용 수정 및 저장
+//        diary.updateDiary(content);
+//        return diaryRepository.save(diary);
+//    }
+//
+//    // 일기 삭제
+//    @Transactional
+//    public void deleteDiary(String userId, Long diaryId) {
+//        // 일기 ID로 Diary 조회
+//        Diary diary = diaryRepository.findById(diaryId)
+//                .orElseThrow(() -> new RuntimeException("Diary not found"));
+////        // 요청한 userId와 Diary의 user가 동일한지 확인
+////        if (!diary.getUser().getUserId().equals(userId)) {
+////            throw new RuntimeException("Permission denied");
+////        }
+//        diaryRepository.delete(diary);
+//    }
 
 
     // 특정 유저의 특정 날짜 일기 조회
@@ -90,4 +129,15 @@ public class DiaryService {
         Diary diary=diaryRepository.findLatestDiaryByUserId(user.getUserId()).get(0);
         return diary.getDate();
     }
+
+    // 가장 최근 작성된 일기 날짜 반환
+    public LocalDate getLatestDiaryDate(String token) {
+        User user = userService.tokenToUser(token);
+        Long userId = user.getId();
+
+        return diaryRepository.findTopByUser_IdOrderByDateDesc(userId)
+                .map(Diary::getDate)
+                .orElseThrow(() -> new RuntimeException("작성된 일기가 없습니다."));
+    }
 }
+

@@ -8,9 +8,11 @@ import Javaproject.Feellog.repository.RecommendedActivityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +26,7 @@ public class RecommendedActivityService {
      * @param emotionType 감정 유형 (예: joy)
      * @return 랜덤 추천 활동
      */
-    public RecommendedActivityDTO.ResponseDTO getRandomActivity(String emotionType) {
+    public List<RecommendedActivityDTO.ResponseDTO> getRandomActivities(String emotionType, int count) {
         // 감정 유형으로 Emotion 조회
         Emotion emotion = emotionRepository.findByEmotionType(emotionType);
         if (emotion == null) {
@@ -37,17 +39,42 @@ public class RecommendedActivityService {
             throw new IllegalArgumentException("해당 감정에 대한 추천 활동이 없습니다.");
         }
 
-        // 랜덤으로 하나의 추천 활동 선택
-        Random random = new Random();
-        RecommendedActivity randomActivity = activities.get(random.nextInt(activities.size()));
-
-        return new RecommendedActivityDTO.ResponseDTO(
-                randomActivity.getId(),
-                emotion.getEmotionType(),
-                randomActivity.getName(),
-                randomActivity.getDescription()
-        );
+        // 리스트를 랜덤하게 섞고 상위 count 개 반환
+        Collections.shuffle(activities);
+        return activities.stream()
+                .limit(count)
+                .map(activity -> new RecommendedActivityDTO.ResponseDTO(
+                        activity.getId(),
+                        emotion.getEmotionType(),
+                        activity.getName(),
+                        activity.getDescription()
+                ))
+                .collect(Collectors.toList());
     }
+//    public RecommendedActivityDTO.ResponseDTO getRandomActivity(String emotionType) {
+//        // 감정 유형으로 Emotion 조회
+//        Emotion emotion = emotionRepository.findByEmotionType(emotionType);
+//        if (emotion == null) {
+//            throw new IllegalArgumentException("존재하지 않는 감정 유형입니다.");
+//        }
+//
+//        // Emotion ID를 기반으로 추천 활동 리스트 조회
+//        List<RecommendedActivity> activities = recommendedActivityRepository.findByEmotion_Id(emotion.getId());
+//        if (activities.isEmpty()) {
+//            throw new IllegalArgumentException("해당 감정에 대한 추천 활동이 없습니다.");
+//        }
+//
+//        // 랜덤으로 하나의 추천 활동 선택
+//        Random random = new Random();
+//        RecommendedActivity randomActivity = activities.get(random.nextInt(activities.size()));
+//
+//        return new RecommendedActivityDTO.ResponseDTO(
+//                randomActivity.getId(),
+//                emotion.getEmotionType(),
+//                randomActivity.getName(),
+//                randomActivity.getDescription()
+//        );
+//    }
 
     /**
      * 새로운 추천 활동 생성
