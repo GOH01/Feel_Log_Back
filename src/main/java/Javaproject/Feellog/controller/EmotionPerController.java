@@ -89,8 +89,9 @@ public class EmotionPerController {
     }
 
     @GetMapping("/statistics/monthly")
-    public ResponseEntity<Map<String, Object>> getMonthlyStatistics(@RequestParam int year, @RequestParam int month) {
-        Map<String, Double> statistics = emotionPerService.getMonthlyEmotionStatistics(year, month);
+    public ResponseEntity<Map<String, Object>> getMonthlyStatistics(@RequestHeader("Authorization") String token, @RequestParam int year, @RequestParam int month) {
+        String userToken = jwtUtility.bearerToken(token);
+        Map<String, Double> statistics = emotionPerService.getMonthlyEmotionStatistics(userToken, year, month);
         Map<String, Object> response = new HashMap<>();
         response.put("month", year + "-" + (month < 10 ? "0" + month : month));
         response.put("statistics", statistics);

@@ -292,9 +292,11 @@ public class EmotionPerService {
         return emotions;
     }
 
-    public Map<String, Double> getMonthlyEmotionStatistics(int year, int month) {
+    public Map<String, Double> getMonthlyEmotionStatistics( String token, int year, int month) {
+
+        Long userId=userService.tokenToUser(token).getId();
         // 1. 해당 월의 데이터 조회
-        List<EmotionPer> emotionPerList = emotionPerRepository.findByMonthAndYear(month, year);
+        List<EmotionPer> emotionPerList = emotionPerRepository.findByMonthAndYear(month, year, userId);
 
         if (emotionPerList.isEmpty()) {
             throw new IllegalArgumentException("해당 월의 데이터가 존재하지 않습니다.");

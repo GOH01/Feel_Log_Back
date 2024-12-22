@@ -10,8 +10,8 @@ import java.util.List;
 
 @Repository
 public interface EmotionPerRepository extends JpaRepository<EmotionPer, Long> {
-    @Query("SELECT e FROM EmotionPer e WHERE MONTH(e.diary.date) = :month AND YEAR(e.diary.date) = :year")
-    List<EmotionPer> findByMonthAndYear(@Param("month") int month, @Param("year") int year);
+    @Query("SELECT e FROM EmotionPer e WHERE MONTH(e.diary.date) = :month AND YEAR(e.diary.date) = :year AND e.diary.user.id = :userId")
+    List<EmotionPer> findByMonthAndYear(@Param("month") int month, @Param("year") int year, @Param("userId") Long userId );
 
     List<EmotionPer> findByDiaryId(Long diaryId);
     // 감정별로 가장 높은 비율을 가진 날짜 검색
