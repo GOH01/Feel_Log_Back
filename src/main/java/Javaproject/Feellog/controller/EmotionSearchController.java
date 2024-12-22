@@ -16,7 +16,7 @@ public class EmotionSearchController {
 
     // 감정별로 가장 높은 비율을 가진 날짜를 반환
     @GetMapping("/top-dates")
-    public ResponseEntity<List<EmotionTopDateDTO>> getTopDatesByEmotion(
+    public ResponseEntity<?> getTopDatesByEmotion(
             @RequestHeader("Authorization") String token,
             @RequestParam String emotionType
     ) {
@@ -28,9 +28,10 @@ public class EmotionSearchController {
             );
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(null);
+            return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(500).body(null);
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("서버 오류: 요청을 처리할 수 없습니다.");
         }
     }
 }
