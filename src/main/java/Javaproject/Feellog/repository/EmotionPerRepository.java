@@ -25,4 +25,6 @@ public interface EmotionPerRepository extends JpaRepository<EmotionPer, Long> {
     List<Object[]> findTopDatesByEmotionAndUser(String emotionType, Long userId);
 
 
+    void deleteByDiaryId(Long diaryId);
+
 }

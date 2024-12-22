@@ -89,6 +89,8 @@ public class EmotionPerService {
         // 5. joy와 anger의 score 스왑
         Map<String, Double> swappedScores = swap(labels, normalizedScores);
 
+        // 기존 감정 데이터 삭제
+        emotionPerRepository.deleteByDiaryId(diary.getId());
         // 6. 결과 저장
         saveEmotionPer(diary, swappedScores);
     }
