@@ -25,7 +25,7 @@ public class EmotionSearchService {
         List<Object[]> results = emotionPerRepository.findTopDatesByEmotionAndUser(emotionType, userId);
 
         if (results == null || results.isEmpty()) {
-            throw new IllegalArgumentException("선택한 감정의 최고 비율 날짜 데이터가 없습니다.");
+            throw new IllegalArgumentException("선택한 감정의 최고 비율 날짜가 없습니다.");
         }
 
         // 결과를 DTO로 변환
